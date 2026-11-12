@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажёр: input() — 20 интересных задач</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #0f172a; color: #e2e8f0; line-height: 1.6; padding: 20px;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+        h1 {
+            font-size: 2.2rem; margin-bottom: 8px;
+            background: linear-gradient(135deg, #38bdf8, #a78bfa);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle { color: #94a3b8; margin-bottom: 28px; font-size: 1.05rem; }
+
+        .terms {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px; margin-bottom: 36px;
+        }
+        .term-card {
+            background: #1e293b; border-radius: 14px; padding: 18px 20px;
+            border-left: 5px solid #38bdf8; box-shadow: 0 4px 14px rgba(0,0,0,.3);
+            transition: transform .15s ease;
+        }
+        .term-card:hover { transform: translateY(-3px); }
+        .term-card:nth-child(2) { border-left-color: #a78bfa; }
+        .term-card:nth-child(3) { border-left-color: #34d399; }
+        .term-card:nth-child(4) { border-left-color: #fbbf24; }
+        .term-card:nth-child(5) { border-left-color: #f87171; }
+        .term-card h3 { font-size: 1.15rem; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .term-card .badge {
+            font-size: .7rem; background: #334155; color: #cbd5e1;
+            padding: 2px 8px; border-radius: 20px; font-weight: 400;
+        }
+        .term-card p { font-size: .92rem; color: #cbd5e1; }
+        .term-card code {
+            background: #0f172a; padding: 1px 6px; border-radius: 6px;
+            font-size: .88em; color: #7dd3fc;
+        }
+
+        .progress-wrap {
+            background: #1e293b; border-radius: 14px; padding: 16px 22px;
+            margin-bottom: 28px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+            position: sticky; top: 10px; z-index: 10;
+            box-shadow: 0 4px 20px rgba(0,0,0,.4);
+        }
+        .progress-wrap .label { font-weight: 600; white-space: nowrap; }
+        .progress-bar {
+            flex: 1; min-width: 160px; height: 12px; background: #0f172a;
+            border-radius: 10px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #38bdf8, #a78bfa);
+            border-radius: 10px; transition: width .35s ease;
+        }
+        .progress-text { font-variant-numeric: tabular-nums; color: #94a3b8; font-size: .95rem; }
+
+        .tasks { display: flex; flex-direction: column; gap: 18px; margin-bottom: 40px; }
+        .task {
+            background: #1e293b; border-radius: 14px; padding: 20px 22px;
+            box-shadow: 0 3px 10px rgba(0,0,0,.25); transition: border .2s;
+            border: 2px solid transparent;
+        }
+        .task.correct { border-color: #22c55e; background: #14532d33; }
+        .task.wrong { border-color: #ef4444; background: #7f1d1d33; }
+        .task-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+        .task-num {
+            background: #334155; color: #7dd3fc; font-weight: 700; font-size: .9rem;
+            min-width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .task-text { font-size: 1rem; color: #e2e8f0; }
+        .task-text code {
+            background: #0f172a; padding: 1px 7px; border-radius: 6px;
+            color: #7dd3fc; font-size: .9em;
+        }
+        .task-story {
+            font-size: .9rem; color: #fbbf24; margin-top: 6px;
+            padding: 8px 12px; background: #fbbf2410; border-radius: 8px;
+            border-left: 3px solid #fbbf24;
+        }
+
+        /* Кнопка подсказки */
+        .hint-toggle {
+            margin-top: 10px; background: transparent; border: 1px dashed #475569;
+            color: #94a3b8; padding: 6px 14px; border-radius: 8px;
+            font-size: .82rem; cursor: pointer; transition: all .2s;
+        }
+        .hint-toggle:hover { border-color: #fbbf24; color: #fbbf24; }
+        .task-hint {
+            display: none; font-size: .85rem; color: #fbbf24; margin-top: 8px;
+            padding: 8px 12px; background: #fbbf240d; border-radius: 8px;
+            border-left: 3px solid #fbbf24;
+        }
+        .task-hint.visible { display: block; }
+
+        /* Большое нумерованное поле ввода */
+        .code-editor {
+            display: flex; margin-top: 14px; background: #0b1120;
+            border: 2px solid #334155; border-radius: 12px; overflow: hidden;
+            transition: border .2s;
+        }
+        .code-editor:focus-within { border-color: #38bdf8; }
+        .code-editor.disabled { opacity: .6; }
+
+        .line-numbers {
+            padding: 14px 8px 14px 14px; background: #0f172a; color: #475569;
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 1rem;
+            line-height: 1.6; text-align: right; user-select: none;
+            border-right: 1px solid #1e293b; min-width: 44px;
+            white-space: pre;
+        }
+        .code-area {
+            flex: 1; min-height: 140px; padding: 14px;
+            background: transparent; border: none; outline: none; resize: vertical;
+            color: #e2e8f0; font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 1rem; line-height: 1.6;
+        }
+        .code-area::placeholder { color: #475569; }
+        .code-area:disabled { cursor: not-allowed; }
+
+        .task-input-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+        .task-input-row button {
+            padding: 11px 24px; border-radius: 10px; border: none;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: #fff; font-weight: 600; cursor: pointer; font-size: .95rem;
+            transition: opacity .2s, transform .1s; white-space: nowrap;
+        }
+        .task-input-row button:hover:not(:disabled) { opacity: .9; }
+        .task-input-row button:active:not(:disabled) { transform: scale(.97); }
+        .task-input-row button:disabled { opacity: .4; cursor: not-allowed; }
+
+        .task-feedback { margin-top: 10px; font-size: .9rem; font-weight: 500; min-height: 22px; }
+        .task-feedback.ok { color: #4ade80; }
+        .task-feedback.err { color: #f87171; }
+        .task-feedback .expected {
+            color: #fbbf24; font-family: 'Consolas', monospace;
+            display: inline-block; margin-top: 4px; background: #0f172a;
+            padding: 6px 12px; border-radius: 8px; white-space: pre-wrap;
+            border-left: 3px solid #fbbf24;
+        }
+
+        .final-result {
+            background: #1e293b; border-radius: 14px; padding: 24px; text-align: center;
+            margin-bottom: 30px; border: 2px solid #334155;
+        }
+        .final-result h2 { font-size: 1.3rem; margin-bottom: 8px; }
+        .final-result p { color: #94a3b8; }
+        .final-result .score {
+            font-size: 2rem; font-weight: 800;
+            background: linear-gradient(135deg, #38bdf8, #a78bfa);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .reset-btn {
+            margin-top: 14px; padding: 10px 26px; border-radius: 10px;
+            border: 2px solid #38bdf8; background: transparent; color: #38bdf8;
+            font-weight: 600; cursor: pointer; font-size: .95rem;
+            transition: background .2s, color .2s;
+        }
+        .reset-btn:hover { background: #38bdf8; color: #0f172a; }
+
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 6px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <h1>🐍 20 задач на input()</h1>
+    <p class="subtitle">Каждая задача — маленькая программа. Пиши код и проверяй себя!</p>
+
+    <div class="terms">
+        <div class="term-card">
+            <h3>🖨️ print() <span class="badge">вывод</span></h3>
+            <p>Выводит данные на экран. Пример: <code>print("Привет")</code>.</p>
+        </div>
+        <div class="term-card">
+            <h3>📦 Переменная <span class="badge">хранение</span></h3>
+            <p>«Коробка» для значения. Пример: <code>x = 10</code>.</p>
+        </div>
+        <div class="term-card">
+            <h3>🔢 int() <span class="badge">целое число</span></h3>
+            <p>Превращает в целое число. Пример: <code>int("25")</code> → <code>25</code>.</p>
+        </div>
+        <div class="term-card">
+            <h3>⌨️ input() <span class="badge">ввод</span></h3>
+            <p>Спрашивает у пользователя строку. Всегда возвращает <strong>строку</strong>.</p>
+        </div>
+        <div class="term-card">
+            <h3>🔤 str() <span class="badge">строка</span></h3>
+            <p>Превращает в строку. Пример: <code>str(42)</code> → <code>"42"</code>.</p>
+        </div>
+    </div>
+
+    <div class="progress-wrap">
+        <span class="label">✅ Решено:</span>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <span class="progress-text" id="progressText">0 / 20</span>
+    </div>
+
+    <div class="tasks" id="tasksContainer"></div>
+
+    <div class="final-result" id="finalResult" style="display:none;">
+        <h2>🏁 Результат</h2>
+        <p class="score" id="finalScore">0 / 20</p>
+        <p id="finalMessage"></p>
+        <button class="reset-btn" id="resetBtn">🔄 Пройти заново</button>
+    </div>
+
+</div>
+
+<script>
+    const tasksData = [
+        {
+            story: '🤖 Робот-приветствие',
+            q: 'Робот должен поздороваться с пользователем по имени. Запроси имя и выведи: <code>Привет, ИМЯ!</code>',
+            hint: 'name = input("Как тебя зовут? ")\nprint("Привет, " + name + "!")',
+            correct: [
+                'name = input("Как тебя зовут? "); print("Привет, " + name + "!")',
+                'name = input(); print("Привет, " + name + "!")',
+                'name = input("Как тебя зовут? "); print(f"Привет, {name}!")',
+                'name = input(); print(f"Привет, {name}!")',
+                'name=input("Как тебя зовут? ");print("Привет, "+name+"!")',
+                'name=input();print("Привет, "+name+"!")',
+                'name = input("Как тебя зовут? ")\nprint("Привет, " + name + "!")',
+                'name = input()\nprint("Привет, " + name + "!")'
+            ]
+        },
+        {
+            story: '🎂 Калькулятор возраста',
+            q: 'Пользователь вводит год рождения. Посчитай и выведи, сколько ему лет в 2026 году. Используй int().',
+            hint: 'year = int(input("Год рождения: "))\nprint(2026 - year)',
+            correct: [
+                'year = int(input("Год рождения: ")); print(2026 - year)',
+                'year = int(input()); print(2026 - year)',
+                'year=int(input());print(2026-year)',
+                'year = int(input("Год рождения: ")); print(2026-year)',
+                'year = int(input("Год рождения: "))\nprint(2026 - year)',
+                'year = int(input())\nprint(2026 - year)'
+            ]
+        },
+        {
+            story: '🧮 Карманный калькулятор',
+            q: 'Запроси два числа и выведи их сумму, разность и произведение (каждое с новой строки).',
+            hint: 'a = int(input())\nb = int(input())\nprint(a + b)\nprint(a - b)\nprint(a * b)',
+            correct: [
+                'a = int(input()); b = int(input()); print(a + b); print(a - b); print(a * b)',
+                'a=int(input());b=int(input());print(a+b);print(a-b);print(a*b)',
+                'a = int(input()); b = int(input()); print(a+b, a-b, a*b)',
+                'a = int(input())\nb = int(input())\nprint(a + b)\nprint(a - b)\nprint(a * b)',
+                'a = int(input())\nb = int(input())\nprint(a+b)\nprint(a-b)\nprint(a*b)'
+            ]
+        },
+        {
+            story: '🍕 Раздели пиццу',
+            q: 'Запроси количество кусков пиццы и количество друзей. Выведи, сколько кусков достанется каждому (целочисленное деление).',
+            hint: 'slices = int(input())\nfriends = int(input())\nprint(slices // friends)',
+            correct: [
+                'slices = int(input()); friends = int(input()); print(slices // friends)',
+                'slices=int(input());friends=int(input());print(slices//friends)',
+                'slices = int(input("Кусков: ")); friends = int(input("Друзей: ")); print(slices // friends)',
+                'slices = int(input())\nfriends = int(input())\nprint(slices // friends)',
+                'slices = int(input())\nfriends = int(input())\nprint(slices//friends)'
+            ]
+        },
+        {
+            story: '🎮 Секретный код',
+            q: 'Запроси слово и выведи его в верхнем регистре (заглавными буквами).',
+            hint: 'word = input()\nprint(word.upper())',
+            correct: [
+                'word = input(); print(word.upper())',
+                'word=input();print(word.upper())',
+                'word = input("Слово: "); print(word.upper())',
+                'word = input()\nprint(word.upper())',
+                'word = input()\nprint(word.upper())'
+            ]
+        },
+        {
+            story: '📏 Конвертер роста',
+            q: 'Запроси рост в сантиметрах и выведи его в метрах (раздели на 100).',
+            hint: 'cm = int(input())\nprint(cm / 100)',
+            correct: [
+                'cm = int(input()); print(cm / 100)',
+                'cm=int(input());print(cm/100)',
+                'cm = int(input("Рост в см: ")); print(cm / 100)',
+                'cm = int(input())\nprint(cm / 100)',
+                'cm = int(input())\nprint(cm/100)'
+            ]
+        },
+        {
+            story: '🎲 Бросок кубика',
+            q: 'Запроси число от 1 до 6 и выведи его квадрат (как будто выпало число и мы считаем очки).',
+            hint: 'n = int(input())\nprint(n * n)',
+            correct: [
+                'n = int(input()); print(n * n)',
+                'n=int(input());print(n*n)',
+                'n = int(input()); print(n ** 2)',
+                'n=int(input()); print(n**2)',
+                'n = int(input())\nprint(n * n)',
+                'n = int(input())\nprint(n ** 2)'
+            ]
+        },
+        {
+            story: '📝 Дневник программиста',
+            q: 'Запроси любимый язык программирования и выведи: <code>Отличный выбор — ЯЗЫК!</code>',
+            hint: 'lang = input()\nprint("Отличный выбор — " + lang + "!")',
+            correct: [
+                'lang = input(); print("Отличный выбор — " + lang + "!")',
+                'lang=input();print("Отличный выбор — "+lang+"!")',
+                'lang = input("Язык: "); print("Отличный выбор — " + lang + "!")',
+                'lang = input(); print(f"Отличный выбор — {lang}!")',
+                'lang=input(); print(f"Отличный выбор — {lang}!")',
+                'lang = input()\nprint("Отличный выбор — " + lang + "!")',
+                'lang = input()\nprint(f"Отличный выбор — {lang}!")'
+            ]
+        },
+        {
+            story: '🏦 Банковский вклад',
+            q: 'Запроси сумму вклада и выведи её с начисленными 10% (сумма × 1.1).',
+            hint: 'money = float(input())\nprint(money * 1.1)',
+            correct: [
+                'money = float(input()); print(money * 1.1)',
+                'money=float(input());print(money*1.1)',
+                'money = int(input()); print(money * 1.1)',
+                'money = float(input("Сумма: ")); print(money * 1.1)',
+                'money = float(input())\nprint(money * 1.1)',
+                'money = int(input())\nprint(money * 1.1)'
+            ]
+        },
+        {
+            story: '🎭 Маска имени',
+            q: 'Запроси имя и выведи первую букву имени (первый символ строки).',
+            hint: 'name = input()\nprint(name[0])',
+            correct: [
+                'name = input(); print(name[0])',
+                'name=input();print(name[0])',
+                'name = input("Имя: "); print(name[0])',
+                'name = input()\nprint(name[0])'
+            ]
+        },
+        {
+            story: '⏱️ Секундомер',
+            q: 'Запроси количество минут и выведи, сколько это секунд.',
+            hint: 'min = int(input())\nprint(min * 60)',
+            correct: [
+                'min = int(input()); print(min * 60)',
+                'min=int(input());print(min*60)',
+                'minutes = int(input()); print(minutes * 60)',
+                'min = int(input())\nprint(min * 60)',
+                'minutes = int(input())\nprint(minutes * 60)'
+            ]
+        },
+        {
+            story: '🌡️ Погодный датчик',
+            q: 'Запроси температуру в градусах Цельсия и выведи её в Фаренгейтах: <code>C × 9/5 + 32</code>.',
+            hint: 'c = float(input())\nprint(c * 9 / 5 + 32)',
+            correct: [
+                'c = float(input()); print(c * 9 / 5 + 32)',
+                'c=float(input());print(c*9/5+32)',
+                'c = int(input()); print(c * 9 / 5 + 32)',
+                'c = float(input("Температура: ")); print(c * 9 / 5 + 32)',
+                'c = float(input())\nprint(c * 9 / 5 + 32)',
+                'c = int(input())\nprint(c * 9 / 5 + 32)'
+            ]
+        },
+        {
+            story: '🔐 Пароль-детектив',
+            q: 'Запроси пароль и выведи его длину (количество символов).',
+            hint: 'pwd = input()\nprint(len(pwd))',
+            correct: [
+                'pwd = input(); print(len(pwd))',
+                'pwd=input();print(len(pwd))',
+                'password = input(); print(len(password))',
+                'pwd = input("Пароль: "); print(len(pwd))',
+                'pwd = input()\nprint(len(pwd))',
+                'password = input()\nprint(len(password))'
+            ]
+        },
+        {
+            story: '🎁 Подарочная упаковка',
+            q: 'Запроси название подарка и выведи его 3 раза подряд через пробел (без цикла).',
+            hint: 'gift = input()\nprint(gift + " " + gift + " " + gift)',
+            correct: [
+                'gift = input(); print(gift + " " + gift + " " + gift)',
+                'gift=input();print(gift+" "+gift+" "+gift)',
+                'gift = input(); print(gift, gift, gift)',
+                'gift = input("Подарок: "); print(gift + " " + gift + " " + gift)',
+                'gift = input()\nprint(gift + " " + gift + " " + gift)',
+                'gift = input()\nprint(gift, gift, gift)'
+            ]
+        },
+        {
+            story: '🍔 Счёт в кафе',
+            q: 'Запроси цену блюда и количество порций, выведи итоговую сумму.',
+            hint: 'price = int(input())\ncount = int(input())\nprint(price * count)',
+            correct: [
+                'price = int(input()); count = int(input()); print(price * count)',
+                'price=int(input());count=int(input());print(price*count)',
+                'price = float(input()); count = int(input()); print(price * count)',
+                'price = int(input("Цена: ")); count = int(input("Кол-во: ")); print(price * count)',
+                'price = int(input())\ncount = int(input())\nprint(price * count)',
+                'price = float(input())\ncount = int(input())\nprint(price * count)'
+            ]
+        },
+        {
+            story: '🎨 Цветовая палитра',
+            q: 'Запроси два цвета и выведи их через дефис: <code>красный-синий</code>.',
+            hint: 'a = input()\nb = input()\nprint(a + "-" + b)',
+            correct: [
+                'a = input(); b = input(); print(a + "-" + b)',
+                'a=input();b=input();print(a+"-"+b)',
+                'c1 = input(); c2 = input(); print(c1 + "-" + c2)',
+                'a = input(); b = input(); print(a, "-", b)',
+                'a = input()\nb = input()\nprint(a + "-" + b)',
+                'a = input()\nb = input()\nprint(a, "-", b)'
+            ]
+        },
+        {
+            story: '🕵️ Шифровальщик',
+            q: 'Запроси слово и выведи его задом наперёд (перевёрнутое).',
+            hint: 'word = input()\nprint(word[::-1])',
+            correct: [
+                'word = input(); print(word[::-1])',
+                'word=input();print(word[::-1])',
+                'word = input("Слово: "); print(word[::-1])',
+                'word = input()\nprint(word[::-1])'
+            ]
+        },
+        {
+            story: '📊 Средний балл',
+            q: 'Запроси три оценки и выведи их среднее арифметическое.',
+            hint: 'a = int(input())\nb = int(input())\nc = int(input())\nprint((a + b + c) / 3)',
+            correct: [
+                'a = int(input()); b = int(input()); c = int(input()); print((a + b + c) / 3)',
+                'a=int(input());b=int(input());c=int(input());print((a+b+c)/3)',
+                'a = int(input()); b = int(input()); c = int(input()); print((a + b + c) / 3)',
+                'a = int(input()); b = int(input()); c = int(input()); print((a+b+c)/3)',
+                'a = int(input())\nb = int(input())\nc = int(input())\nprint((a + b + c) / 3)',
+                'a = int(input())\nb = int(input())\nc = int(input())\nprint((a+b+c)/3)'
+            ]
+        },
+        {
+            story: '🚀 Космический старт',
+            q: 'Запроси название ракеты и обратный отсчёт (число). Выведи: <code>Ракета ИМЯ стартует через N секунд!</code>',
+            hint: 'rocket = input()\nn = input()\nprint("Ракета " + rocket + " стартует через " + n + " секунд!")',
+            correct: [
+                'rocket = input(); n = input(); print("Ракета " + rocket + " стартует через " + n + " секунд!")',
+                'rocket=input();n=input();print("Ракета "+rocket+" стартует через "+n+" секунд!")',
+                'rocket = input(); n = input(); print(f"Ракета {rocket} стартует через {n} секунд!")',
+                'rocket=input(); n=input(); print(f"Ракета {rocket} стартует через {n} секунд!")',
+                'rocket = input()\nn = input()\nprint("Ракета " + rocket + " стартует через " + n + " секунд!")',
+                'rocket = input()\nn = input()\nprint(f"Ракета {rocket} стартует через {n} секунд!")'
+            ]
+        },
+        {
+            story: '💡 Умный дом',
+            q: 'Запроси количество лампочек в комнате и выведи, сколько энергии они потребляют, если каждая тратит 15 Вт (число × 15).',
+            hint: 'n = int(input())\nprint(n * 15)',
+            correct: [
+                'n = int(input()); print(n * 15)',
+                'n=int(input());print(n*15)',
+                'n = int(input("Лампочек: ")); print(n * 15)',
+                'n = int(input())\nprint(n * 15)',
+                'n = int(input())\nprint(n*15)'
+            ]
+        }
+    ];
+
+    const STORAGE_KEY = 'python_input_trainer_v4';
+    let state = loadState();
+
+    function defaultState() {
+        return {
+            solved: new Array(tasksData.length).fill(false),
+            answers: new Array(tasksData.length).fill(''),
+            checked: new Array(tasksData.length).fill(false),
+            hintsOpen: new Array(tasksData.length).fill(false)
+        };
+    }
+
+    function loadState() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return defaultState();
+            const parsed = JSON.parse(raw);
+            if (!parsed || !Array.isArray(parsed.solved) || parsed.solved.length !== tasksData.length) {
+                return defaultState();
+            }
+            if (!Array.isArray(parsed.hintsOpen)) {
+                parsed.hintsOpen = new Array(tasksData.length).fill(false);
+            }
+            return parsed;
+        } catch (e) { return defaultState(); }
+    }
+
+    function saveState() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+
+    function normalize(str) {
+        return str
+            .replace(/\\n/g, '\n')
+            .trim()
+            .replace(/[ \t]+/g, ' ')
+            .replace(/\s*\n\s*/g, '\n')
+            .replace(/\n+/g, '\n')
+            .replace(/\s*([=+\-*/(),;:<>\[\]])\s*/g, '$1')
+            .replace(/["']/g, '"')
+            .replace(/\bint\s*\(/g, 'int(')
+            .replace(/\bstr\s*\(/g, 'str(')
+            .replace(/\bfloat\s*\(/g, 'float(')
+            .replace(/\binput\s*\(/g, 'input(')
+            .replace(/\bprint\s*\(/g, 'print(')
+            .replace(/\blen\s*\(/g, 'len(')
+            .toLowerCase();
+    }
+
+    function isCorrect(userAnswer, correctList) {
+        const u = normalize(userAnswer);
+        if (!u) return false;
+        return correctList.some(c => normalize(c) === u);
+    }
+
+    const container = document.getElementById('tasksContainer');
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    // Обновить номера строк в редакторе
+    function updateLineNumbers(idx) {
+        const area = document.getElementById('code-' + idx);
+        const nums = document.getElementById('lines-' + idx);
+        if (!area || !nums) return;
+        const lineCount = Math.max(area.value.split('\n').length, 1);
+        let result = '';
+        for (let i = 1; i <= lineCount; i++) result += i + '\n';
+        nums.textContent = result;
+    }
+
+    function renderTasks() {
+        container.innerHTML = '';
+        tasksData.forEach((task, i) => {
+            const solved = state.solved[i];
+            const checked = state.checked[i];
+            const savedAnswer = state.answers[i] || '';
+            const hintOpen = state.hintsOpen[i];
+
+            const div = document.createElement('div');
+            div.className = 'task' + (checked ? (solved ? ' correct' : ' wrong') : '');
+            div.id = 'task-' + i;
+            div.innerHTML =
+                '<div class="task-header">' +
+                    '<div class="task-num">' + (i + 1) + '</div>' +
+                    '<div>' +
+                        '<div class="task-text">' + task.q + '</div>' +
+                        '<div class="task-story">' + task.story + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<button class="hint-toggle" id="hintbtn-' + i + '">' +
+                    (hintOpen ? '🙈 Скрыть подсказку' : '💡 Показать подсказку') +
+                '</button>' +
+                '<div class="task-hint' + (hintOpen ? ' visible' : '') + '" id="hint-' + i + '">' +
+                    escapeHtml(task.hint).replace(/\n/g, '<br>') +
+                '</div>' +
+                '<div class="code-editor' + (checked && solved ? ' disabled' : '') + '">' +
+                    '<div class="line-numbers" id="lines-' + i + '">1</div>' +
+                    '<textarea class="code-area" id="code-' + i + '" ' +
+                        'placeholder="Напиши код здесь..." ' +
+                        (checked && solved ? 'disabled' : '') +
+                        ' spellcheck="false">' + escapeHtml(savedAnswer) + '</textarea>' +
+                '</div>' +
+                '<div class="task-input-row">' +
+                    '<button id="btn-' + i + '" ' + (checked && solved ? 'disabled' : '') + '>' +
+                        (checked && solved ? '✅ Верно' : '✔️ Проверить') +
+                    '</button>' +
+                '</div>' +
+                '<div class="task-feedback" id="fb-' + i + '"></div>';
+            container.appendChild(div);
+
+            if (checked) {
+                const fb = document.getElementById('fb-' + i);
+                if (solved) {
+                    fb.className = 'task-feedback ok';
+                    fb.textContent = '✅ Верно! Отлично.';
+                } else {
+                    fb.className = 'task-feedback err';
+                    fb.innerHTML = '❌ Неверно. Правильный вариант:<br><span class="expected">' +
+                                   escapeHtml(task.correct[0]) + '</span>';
+                }
+            }
+
+            const area = document.getElementById('code-' + i);
+            const btn = document.getElementById('btn-' + i);
+            const hintBtn = document.getElementById('hintbtn-' + i);
+            const hintDiv = document.getElementById('hint-' + i);
+
+            updateLineNumbers(i);
+
+            area.addEventListener('input', () => {
+                state.answers[i] = area.value;
+                updateLineNumbers(i);
+                saveState();
+            });
+            area.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = area.selectionStart;
+                    const end = area.selectionEnd;
+                    area.value = area.value.substring(0, start) + '    ' + area.value.substring(end);
+                    area.selectionStart = area.selectionEnd = start + 4;
+                    state.answers[i] = area.value;
+                    updateLineNumbers(i);
+                    saveState();
+                }
+            });
+
+            btn.addEventListener('click', () => checkTask(i));
+
+            hintBtn.addEventListener('click', () => {
+                state.hintsOpen[i] = !state.hintsOpen[i];
+                hintDiv.classList.toggle('visible', state.hintsOpen[i]);
+                hintBtn.textContent = state.hintsOpen[i] ? '🙈 Скрыть подсказку' : '💡 Показать подсказку';
+                saveState();
+            });
+        });
+
+        updateProgress();
+        updateFinal();
+    }
+
+    function checkTask(i) {
+        const area = document.getElementById('code-' + i);
+        const value = area.value;
+        const task = tasksData[i];
+
+        state.answers[i] = value;
+
+        if (!value.trim()) {
+            const fb = document.getElementById('fb-' + i);
+            fb.className = 'task-feedback err';
+            fb.textContent = '⚠️ Введи ответ, поле пустое.';
+            return;
+        }
+
+        const ok = isCorrect(value, task.correct);
+        state.checked[i] = true;
+        state.solved[i] = ok;
+        saveState();
+
+        const taskDiv = document.getElementById('task-' + i);
+        const btn = document.getElementById('btn-' + i);
+        const fb = document.getElementById('fb-' + i);
+        const editor = area.parentElement;
+
+        taskDiv.classList.remove('correct', 'wrong');
+        taskDiv.classList.add(ok ? 'correct' : 'wrong');
+
+        if (ok) {
+            fb.className = 'task-feedback ok';
+            fb.textContent = '✅ Верно! Отлично.';
+            area.disabled = true;
+            editor.classList.add('disabled');
+            btn.disabled = true;
+            btn.textContent = '✅ Верно';
+        } else {
+            fb.className = 'task-feedback err';
+            fb.innerHTML = '❌ Неверно. Правильный вариант:<br><span class="expected">' +
+                           escapeHtml(task.correct[0]) + '</span>';
+            area.focus();
+        }
+
+        updateProgress();
+        updateFinal();
+    }
+
+    function updateProgress() {
+        const total = tasksData.length;
+        const solvedCount = state.solved.filter(Boolean).length;
+        const percent = (solvedCount / total) * 100;
+        document.getElementById('progressFill').style.width = percent + '%';
+        document.getElementById('progressText').textContent = solvedCount + ' / ' + total;
+    }
+
+    function updateFinal() {
+        const total = tasksData.length;
+        const solvedCount = state.solved.filter(Boolean).length;
+        const finalBox = document.getElementById('finalResult');
+
+        if (solvedCount === total) {
+            finalBox.style.display = 'block';
+            document.getElementById('finalScore').textContent = solvedCount + ' / ' + total;
+            document.getElementById('finalMessage').textContent =
+                '🎉 Идеально! Ты освоил input() и умеешь писать мини-программы!';
+        } else {
+            finalBox.style.display = 'none';
+        }
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        if (confirm('Сбросить все ответы и пройти заново?')) {
+            state = defaultState();
+            saveState();
+            renderTasks();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+
+    renderTasks();
+</script>
+</body>
+</html>
